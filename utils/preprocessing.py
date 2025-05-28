@@ -2,8 +2,6 @@ import os
 import re
 from multiprocessing import Pool, freeze_support
 
-# === LANGUAGE-SPECIFIC BOILERPLATE REMOVAL ===
-
 def remove_python_boilerplate(code):
     code = re.sub(r'#.*', '', code)
     code = re.sub(r'^\s*import .*', '', code, flags=re.MULTILINE)

@@ -1,5 +1,5 @@
 import os
-import fitz  # PyMuPDF
+import fitz 
 from PIL import Image
 import pytesseract
 import io
@@ -24,7 +24,6 @@ def handle_handwritten_pdf(file_path, output_dir="data/preprocessed"):
     if not content.strip():
         print(f"No handwritten content extracted from {file_path}")
         return None
-    # Preserve student folder in output path
     relative_path = os.path.relpath(file_path, os.path.join('data', 'uploads'))
     student_folder = os.path.dirname(relative_path)
     base_name = os.path.basename(file_path) + ".txt"

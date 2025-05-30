@@ -45,12 +45,11 @@ def preprocess_file(file_path):
         out_path = os.path.join('data', 'preprocessed', base_name)
         with open(out_path, 'w', encoding='utf-8') as f:
             f.write(cleaned_code)
-
         return (file_path, out_path)
     except Exception as e:
         print(f"Error processing {file_path}: {e}")
         return (file_path, None)
-
+    
 def run_parallel_preprocessing():
     input_dir = os.path.join('data', 'uploads')
     files = [os.path.join(input_dir, f) for f in os.listdir(input_dir) if f.endswith(('.py', '.cpp', '.java', '.h'))]
@@ -59,7 +58,6 @@ def run_parallel_preprocessing():
 
     with Pool() as pool:
         results = pool.map(preprocess_file, files)
-
     return results
 
 if __name__ == '__main__':

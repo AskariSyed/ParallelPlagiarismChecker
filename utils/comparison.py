@@ -12,7 +12,7 @@ def compare_pair(file1_path: str, file2_path: str) -> tuple:
 
     matcher = difflib.SequenceMatcher(None, code1, code2)
     score = round(matcher.ratio() * 100, 2)
-    # Return matching blocks for highlighting
+    
     matching_blocks = matcher.get_matching_blocks()
     return (os.path.basename(file1_path), os.path.basename(file2_path), score, code1, code2, matching_blocks)
 

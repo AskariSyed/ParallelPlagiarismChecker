@@ -44,6 +44,7 @@ def main():
     if st.sidebar.button("Clear Uploaded Files"):
         clear_directory(UPLOAD_DIR)
         clear_directory(PREPROCESSED_DIR)
+        
         clear_directory(os.path.dirname(RESULTS_CSV))
         if os.path.exists(HIGHLIGHTED_RESULTS_FILE):
             os.remove(HIGHLIGHTED_RESULTS_FILE)

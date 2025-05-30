@@ -117,7 +117,6 @@ def process_uploaded_files(uploaded_files):
         update_progress(0, 0, "error")
         return False
     
-    # Comparison
     total_pairs = (len(preprocessed_files) * (len(preprocessed_files) - 1)) // 2
     start_time = time.perf_counter()
     update_progress(0, total_pairs, "comparison")
@@ -153,7 +152,6 @@ def process_uploaded_files(uploaded_files):
 
     st.session_state.results_df = pd.read_csv(RESULTS_CSV)
     
-    # Display metrics table and chart
     st.subheader("📊 Processing Metrics")
     metrics_df = pd.DataFrame({
         "Stage": list(stage_times.keys()),
@@ -182,7 +180,7 @@ def process_uploaded_files(uploaded_files):
 
 
 @st.cache_data
-def read_file_content(file_name, use_preprocessed=True, preview_lines=500):
+def read_file_content(file_name, use_preprocessed=True, preview_lines=1000):
     """Read file content with preview option."""
     if use_preprocessed:
         file_path = Path(PREPROCESSED_DIR) / file_name
@@ -259,25 +257,39 @@ def display_summary(df):
 
 
 def display_max_plagiarism_per_file(df):
+    
     with st.expander("Display each file's highest plagiarism match", expanded=False):
         start_time = time.perf_counter()
         st.subheader("🔍 Each File's Highest Plagiarism Match")
-        file_similarities = pd.concat([
-            df[["File 1", "File 2", "Similarity %"]].rename(columns={"File 1": "File", "File 2": "Matched With"}),
-            df[["File 2", "File 1", "Similarity %"]].rename(columns={"File 2": "File", "File 1": "Matched With"})
-        ])
-        match_df = file_similarities.loc[file_similarities.groupby("File")["Similarity %"].idxmax()]
+        df['Pair'] = df.apply(lambda row: tuple(sorted([row['File 1'], row['File 2']])), axis=1)
+        df['File'] = df['File 1']
+        df['Matched With'] = df['File 2']
+        
+        file_similarities = []
+        all_files = set(df["File 1"]).union(df["File 2"])
+        for file in all_files:
+            subset = df[(df["File 1"] == file) | (df["File 2"] == file)].copy()
+            if not subset.empty:
+                subset['Matched With'] = subset.apply(
+                    lambda row: row['File 2'] if row['File 1'] == file else row['File 1'], axis=1)
+                max_row = subset.loc[subset['Similarity %'].idxmax()]
+                file_similarities.append({
+                    'File': file,
+                    'Matched With': max_row['Matched With'],
+                    'Similarity %': max_row['Similarity %']
+                })
+        match_df = pd.DataFrame(file_similarities)
         match_df = match_df.sort_values(by="Similarity %", ascending=False).reset_index(drop=True)
         
         st.dataframe(match_df, use_container_width=True)
+        match_df.to_csv("data/results/highest_match_per_file_Result.csv", index=False)
         
-    st.download_button(
-        label="📥 Download Highest Match Table",
-        data=match_df.to_csv(index=False).encode('utf-8'),
-        file_name=" highest_match_per_file.csv",
-        mime='text/csv'
-    )
-    
+        st.download_button(
+            label="📥 Download Highest Match Table",
+            data=match_df.to_csv(index=False).encode('utf-8'),
+            file_name="highest_match_per_file.csv",
+            mime='text/csv'
+        )    
     bins = [0, 20, 40, 60, 80, 100]
     labels = ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%']
     range_counts, pie_labels = prepare_pie_chart_data(match_df, bins, labels)
@@ -299,7 +311,7 @@ def display_max_plagiarism_per_file(df):
             content, is_truncated = read_file_content(selected_file, use_preprocessed=False)
             st.code(content, language="python" if selected_file.endswith('.py') else None)
             if is_truncated:
-                st.warning("Content truncated to 500 lines. Download the file for full content.")
+                st.warning("Content truncated to 500 lines. View the file for full content.")
         
         with st.expander(f"🔍 Similarity Matches for {selected_file}"):
             subset = df[(df["File 1"] == selected_file) | (df["File 2"] == selected_file)]
@@ -315,13 +327,11 @@ def display_filtered_results(df):
         "🎛️ Select similarity range (%)",
         min_value=0,
         max_value=100,
-        value=(20, 60)  # default range shown
+        value=(20, 60)
     )
 
-    # Unpack the range into min and max
     min_similarity, max_similarity = similarity_range
 
-    # Filter the dataframe using both bounds
     filtered_df = df[(df["Similarity %"] >= min_similarity) & (df["Similarity %"] <= max_similarity)]
         
     with st.expander("📋 File Pair Similarity Results", expanded=False):

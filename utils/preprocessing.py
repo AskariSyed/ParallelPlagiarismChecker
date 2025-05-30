@@ -59,7 +59,3 @@ def run_parallel_preprocessing():
     with Pool() as pool:
         results = pool.map(preprocess_file, files)
     return results
-
-if __name__ == '__main__':
-    freeze_support()
-    run_parallel_preprocessing()
